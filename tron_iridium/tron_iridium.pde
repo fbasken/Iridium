@@ -1,17 +1,18 @@
 /*
 
  Tron Iridum by Freddie (counselor)
- mod of Tron_Platinum
+ mod/continuation of Tron_Platinum (also by Freddie)
  
  (original Tron 2 by Alice and Matisse - TIC Session 1 Seniors 2019)
  
  use a PGraphics to center the scoreboard properly lol
- fade in / out for hud objects
- fade in / out for TRON title
+ make title start button fade look better
  fix 3-player not tying on all player sizes
  selfkills should not count as frags toggle option
  dash button
  crash particle effects
+ music switching
+ button sound effects
  
  AUDIO CREDITS:
  * Arsonist - Discovery
@@ -22,7 +23,7 @@
 import ddf.minim.*;
 
 // game version
-final String _VERSION = "1.22";
+final String _VERSION = "1.26";
 
 Minim minim;
 ArrayList<AudioPlayer> musicTracks = new ArrayList<AudioPlayer>();
@@ -287,11 +288,13 @@ void draw()
     // Press brackets to reset stats
     if (keystatus['['] && keystatus[']'])
     {
-      rounds = 0;
       for (int i = 0; i < players.length; i++)
       {
         players[i].resetStats();
       }
+      rounds = 0;
+      winner = null;
+      //reset();
     }
 
     // toggle player edge teleporting
@@ -538,7 +541,7 @@ void drawSettingsBox()
 
   textY += textVerticalSpacing;
   hud.textAlign(LEFT);
-  hud.text("Player Size: ", boxCenterX - boxWidth / 2 + textMargin, textY);
+  hud.text("Player size: ", boxCenterX - boxWidth / 2 + textMargin, textY);
   hud.textAlign(RIGHT);
   hud.text(size, boxCenterX + boxWidth / 2 - textMargin, textY);
 
@@ -650,7 +653,7 @@ void drawScoreboard()
 
     // Draw number of wins
     hud.textAlign(RIGHT);
-    hud.text(players[i].winCount + " wins (" + players[i].totalFragCount + " frags)", padding + paddingToCenter + (xSpacing * i) + xWidth, yPos);
+    hud.text(players[i].winCount + " wins (" + players[i].totalFragCount + " KOs)", padding + paddingToCenter + (xSpacing * i) + xWidth, yPos);
   }
 
 
