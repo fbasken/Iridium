@@ -23,12 +23,13 @@ class CrashEffect
   
   boolean isOver()
   {
+    return endSize - currentSize < 0.001;
   }
   
   void drawEffect(PGraphics pg)
   {
     pg.strokeWeight(STROKE_WEIGHT);
-    pg.stroke(c.red(), c.green(), c.blue(), map(currentSize, startSize, endSize, 255, 0));
+    pg.stroke(red(c), green(c), blue(c), map(currentSize, startSize, endSize, 255, 0));
     pg.noFill();
     pg.circle(pos.x, pos.y, currentSize);
   }

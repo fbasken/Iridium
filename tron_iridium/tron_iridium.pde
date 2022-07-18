@@ -22,7 +22,7 @@
 import ddf.minim.*;
 
 // game version
-final String _VERSION = "1.21";
+final String _VERSION = "1.22";
 
 Minim minim;
 ArrayList<AudioPlayer> musicTracks = new ArrayList<AudioPlayer>();
@@ -37,6 +37,10 @@ PFont monoFont;
 
 PGraphics gameBoard;
 PGraphics hud;
+
+PVector cameraOffset;
+float hudScale;
+float hudAlpha;
 
 final int STARTING_EDGE_MARGIN = 90;
 
@@ -54,12 +58,13 @@ boolean[] prevKeystatus = new boolean[256];
 int deaths = 0;
 int rounds = 0;
 boolean gameActive = false;
-boolean statusBarVisible = false;
+boolean settingsBoxVisible = false;
 
 int currentPlayers = 4;
 int size = 10;
 int framesPerMove = 1;
 boolean quandaleMode = false; // whether or not players will wrap around the screen or crash into edges
+boolean enableEffects = true;
 
 void setup()
 {
@@ -75,7 +80,7 @@ void setup()
   musicTracks.add(minim.loadFile("Arsonist - Discovery.mp3"));
   musicTracks.add(minim.loadFile("Kobaryo - Atmospherize [feat. blaxervant].mp3"));
   musicTracks.add(minim.loadFile("Andrew Hulshult - Davoth, the Dark Lord (DOOM Eternal OST Gamerip).mp3"));
-  musicTracks.get(2).loop(); // background music
+  musicTracks.get(1).loop(); // background music
 
   sfxTracks.add(minim.loadFile("double knockout.mp3"));
   sfxTracks.add(minim.loadFile("triple knockout.mp3"));
@@ -87,10 +92,12 @@ void setup()
   crashSfxTracks.add(minim.loadFile("KO_SFX_Default.mp3"));
 
   // Display
-  fullScreen();
+  fullScreen(P2D);
+  //noSmooth();
   noCursor();
   gameBoard = createGraphics(width, height);
   hud = createGraphics(width, height);
+  cameraOffset = new PVector(0, 0);
 
   // Create players
   players = new Player[4];
@@ -101,6 +108,7 @@ void setup()
   winner = null;
 
   reset();
+  startHudFX();
 }
 
 void draw()
@@ -239,6 +247,7 @@ void draw()
 
       // Game is no longer active
       gameActive = false;
+      startHudFX();
     }
   }
 
@@ -270,14 +279,15 @@ void draw()
 
 
     // Press spacebar to start game
-    if (keySinglePressed(' '))
+    if (keySinglePressed(' ') || keySinglePressed(ENTER))
     {
       startNewRound();
     }
 
     // Press brackets to reset stats
-    if (keySinglePressed('[') && keySinglePressed(']'))
+    if (keystatus['['] && keystatus[']'])
     {
+      rounds = 0;
       for (int i = 0; i < players.length; i++)
       {
         players[i].resetStats();
@@ -288,24 +298,26 @@ void draw()
     if (keySinglePressed('\\'))
     {
       quandaleMode = !quandaleMode;
-      statusBarVisible = true;
+      settingsBoxVisible = true;
     }
 
     // set players
     if (keySinglePressed('2'))
     {
       currentPlayers = 2;
-      statusBarVisible = true;
+      settingsBoxVisible = true;
     }
     if (keySinglePressed('3'))
     {
       currentPlayers = 3;
-      statusBarVisible = true;
+      settingsBoxVisible = true;
+      reset();
     }
     if (keySinglePressed('4'))
     {
       currentPlayers = 4;
-      statusBarVisible = true;
+      settingsBoxVisible = true;
+      reset();
     }
 
     // increase size (holding shift will increase frames per move)
@@ -320,7 +332,7 @@ void draw()
       } else if (size < 25)
       {
         size += 5;
-        statusBarVisible = true;
+        settingsBoxVisible = true;
       }
     }
     // decrease size (holding shift will decrease frames per move)
@@ -335,28 +347,42 @@ void draw()
       } else if (size > 5)
       {
         size -= 5;
-        statusBarVisible = true;
+        settingsBoxVisible = true;
       }
     }
 
     // Draw status bar
-    if (statusBarVisible)
+    if (settingsBoxVisible)
     {
       drawSettingsBox();
     }
   }
-  
+
   // End drawing of PGraphics objects
   gameBoard.endDraw();
   hud.endDraw();
 
+  //background(UI_BACKGROUND_COLOR);
+
   // Draw game board
   image(gameBoard, 0, 0);
+
+  //updateGameBoardShakeFX();
+  //pushMatrix();
+  //translate(width / 2 + cameraOffset.x, height / 2 + cameraOffset.y);
+  //image(gameBoard, -width / 2, -height / 2);
+  //popMatrix();
 
   // Draw hud if game isn't active
   if (!gameActive)
   {
-    image(hud, 0, 0);
+    updateHudFX();
+    pushMatrix();
+    translate(width / 2, height / 2);
+    scale(hudScale);
+    tint(255, hudAlpha);
+    image(hud, -width / 2, -height / 2);
+    popMatrix();
   }
 
   // Get previous keyboard state
@@ -365,13 +391,53 @@ void draw()
 
 
 
+void startHudFX()
+{
+  // Starting values for hud effects
+  hudAlpha = 0;
+  hudScale = 2;
+}
+
+void updateHudFX()
+{
+  final int TARGET_ALPHA = 255;
+  final float ALPHA_CHANGE_PERCENT = 0.07;
+  final int TARGET_SCALE = 1;
+  final float SCALE_CHANGE_PERCENT = 0.08;
+
+  final float INTERPOLATION_THRESHOLD = 0.001;
+
+  if (TARGET_ALPHA - hudAlpha > INTERPOLATION_THRESHOLD)
+  {
+    hudAlpha += (TARGET_ALPHA - hudAlpha) * ALPHA_CHANGE_PERCENT;
+  } else
+  {
+    hudAlpha = TARGET_ALPHA;
+  }
+
+  if (hudScale - TARGET_SCALE > INTERPOLATION_THRESHOLD)
+  {
+    hudScale -= (hudScale - TARGET_SCALE) * SCALE_CHANGE_PERCENT;
+  } else
+  {
+    hudScale = TARGET_SCALE;
+  }
+}
+
+
 void drawTitleScreen()
 {
   final int SHOW_START_BUTTON_TIME_MS = 6000;
   final float OSCILLATION_MAX_OFFSET = 20;
-  final float SHADOW_OSCILLATION_MAX_OFFSET = 7;
   final float OSCILLATION_RATE = 900.0;
   final float Y_OFFSET_AFTER_START_BUTTON = -height / 12 - subtitleFont.getSize() * 3;
+
+  final float SHADOW_OSCILLATION_MAX_OFFSET = 10;
+  final int NUM_SHADOWS = 3;
+  final float SHADOW_ALPHA_DECREASE = 40;
+  final int SHADOW_STARTING_ALPHA = 200;
+
+  final int PADDING_FROM_YPOS = 18;
 
   float startYPos = height / 2 + titleFont.getSize() / 2.5;
   float yPos = startYPos;
@@ -381,7 +447,7 @@ void drawTitleScreen()
   // After enough time has passed, show a start button and raise up the logo
   if (millis() > SHOW_START_BUTTON_TIME_MS)
   {
-    float titleYOffset = (millis() - SHOW_START_BUTTON_TIME_MS) / -3.0;
+    float titleYOffset = (millis() - SHOW_START_BUTTON_TIME_MS) / -9.0;
 
     if (titleYOffset > Y_OFFSET_AFTER_START_BUTTON)
     {
@@ -397,17 +463,21 @@ void drawTitleScreen()
     hud.fill(UI_COLOR_WHITE);
     hud.textAlign(LEFT);
     hud.textFont(subtitleFont);
-    hud.text("tron_iridium ver " + _VERSION + " by freddie", width/2, yPos + 18);
+    hud.text("tron_iridium ver " + _VERSION + " by freddie", width/2, yPos + PADDING_FROM_YPOS);
   }
 
   // Draw TRON logo
   hud.fill(UI_COLOR_WHITE);
   hud.textAlign(CENTER);
   hud.textFont(titleFont);
-  hud.text("TRON", width/2, yPos - 18);
-  hud.fill(UI_COLOR_WHITE, 130);
-  hud.text("TRON", width/2, yPos - 18 - (SHADOW_OSCILLATION_MAX_OFFSET * sin(millis() / OSCILLATION_RATE)));
+  hud.text("TRON", width/2, yPos - PADDING_FROM_YPOS);
 
+  // Draw shadows under logo
+  for (int i = 0; i < NUM_SHADOWS; i++)
+  {
+    hud.fill(UI_COLOR_WHITE, SHADOW_STARTING_ALPHA - SHADOW_ALPHA_DECREASE * (i + 1));
+    hud.text("TRON", width/2, yPos - PADDING_FROM_YPOS - ((SHADOW_OSCILLATION_MAX_OFFSET / NUM_SHADOWS) * (i + 1) * sin(millis() / OSCILLATION_RATE)));
+  }
   // Used to line things up visually
   //hud.line(0, height/2, width, height/2);
 }
@@ -484,9 +554,17 @@ void drawSettingsBox()
   hud.textAlign(RIGHT);
   hud.text(str(quandaleMode), boxCenterX + boxWidth / 2 - textMargin, textY);
 
-  textY = boxCenterY + monoFont.getSize();
+  textY += textVerticalSpacing;
+  hud.textAlign(LEFT);
+  hud.text("Enable effects: ", boxCenterX - boxWidth / 2 + textMargin, textY);
+  hud.textAlign(RIGHT);
+  hud.text(str(enableEffects), boxCenterX + boxWidth / 2 - textMargin, textY);
+
+
 
   // Controls
+  textY = boxCenterY + monoFont.getSize();
+
   hud.textFont(monoFont);
   hud.fill(UI_COLOR_WHITE);
   hud.textAlign(CENTER);
@@ -655,7 +733,7 @@ void startNewRound()
 {
   reset();
   gameActive = true;
-  statusBarVisible = false;
+  settingsBoxVisible = false;
   rounds++;
 }
 
@@ -696,3 +774,26 @@ void reset()
     players[1].restart(new PVector(roundToGrid(width - STARTING_EDGE_MARGIN), roundToGrid(height / 2)), new PVector(-size, 0));
   }
 }
+
+/*
+void startGameBoardShakeFX()
+ {
+ cameraOffset = new PVector(500, 500);
+ }
+ 
+ void updateGameBoardShakeFX()
+ {
+ final PVector TARGET_OFFSET = new PVector(0, 0);
+ final float OFFSET_CHANGE_PERCENT = 0.9;
+ 
+ final float INTERPOLATION_THRESHOLD = 1;
+ 
+ if (cameraOffset.dist(TARGET_OFFSET) > INTERPOLATION_THRESHOLD)
+ {
+ cameraOffset.add((TARGET_OFFSET.sub(cameraOffset)).mult(1 + OFFSET_CHANGE_PERCENT));
+ } else
+ {
+ cameraOffset.set(TARGET_OFFSET);
+ }
+ }
+ */
