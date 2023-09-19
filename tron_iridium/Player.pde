@@ -61,6 +61,12 @@ class Player
     }
   }
 
+  void knockOut()
+  {
+    alive = false;
+    effectList.add(new CrashEffect(pos, size, c, false));
+  }
+
   /// Draws a rectangle at the player's position
   void drawPlayer()
   {
@@ -69,7 +75,21 @@ class Player
     if (alive)
     {
       gameBoard.fill(c);
-      gameBoard.rect(pos.x, pos.y, size, size, 1 + (int)abs(sin(millis() / 100.0) * 5));
+
+      if (enableFancyTrails)
+      {
+        // Fancy trail
+        gameBoard.rect(pos.x, pos.y, size, size, 1 + (int)abs(sin(millis() / 100.0) * 5));
+
+        /*
+        // Evil trail
+         gameBoard.triangle(pos.x, pos.y + size, pos.x + size, pos.y + size, pos.x + size/2, pos.y);
+         gameBoard.rect(pos.x, pos.y, 1, 1);
+         */
+      } else
+      {
+        gameBoard.rect(pos.x, pos.y, size, size);
+      }
     } else
     {
       gameBoard.fill(lerpColor(c, color(UI_COLOR_WHITE), (sin(millis() / 100.0) *.5) + .5), 20);
@@ -90,19 +110,23 @@ class Player
       if (quandaleMode)
       {
         pos.set(opposingEdgeLocation);
-        return false;
       }
       // Otherwise, this is a crash
       else
       {
-        alive = false;
+        knockOut();
         colorHit = color(UI_BACKGROUND_COLOR);
+
         return true;
       }
-    } else if (gameBoard.get((int)pos.x, (int)pos.y) != color(UI_BACKGROUND_COLOR))
+    }
+
+    // Check to see if touching a color that isn't the background color
+    if (gameBoard.get((int)pos.x, (int)pos.y) != color(UI_BACKGROUND_COLOR))
     {
-      alive = false;
+      knockOut();
       colorHit = gameBoard.get((int)pos.x, (int)pos.y);
+
       return true;
     }
     return false;
@@ -111,9 +135,9 @@ class Player
   PVector getOpposingEdgeLocation()
   {
     if (pos.x + size/2 > width) return new PVector(roundToGrid(size), pos.y);
-    if (pos.x - size/2 < 0) return new PVector(roundToGrid(width - size), pos.y);
-    if (pos.y + size/2 > height) return new PVector(pos.x, roundToGrid(size));
-    if (pos.y - size/2 < 0) return new PVector(pos.x, roundToGrid(height - size));
+    if (pos.x - size/2 < 0) return new PVector(roundToGrid(width - size/2), pos.y);
+    if (pos.y + size/2 > height) return new PVector(pos.x, roundToGrid(size/2));
+    if (pos.y - size/2 < 0) return new PVector(pos.x, roundToGrid(height - size/2));
     return null;
   }
 

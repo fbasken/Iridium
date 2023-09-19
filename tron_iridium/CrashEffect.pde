@@ -1,7 +1,8 @@
+/// A particle effect that appears whenever a Player crashes
 class CrashEffect
 {
-  final float GROW_PERCENTAGE = 3;
-  final float GROW_RATE = .02;
+  final float GROW_PERCENTAGE = 7;
+  final float GROW_RATE = .08;
   final int STROKE_WEIGHT = 5;
   
   PVector pos;
@@ -11,12 +12,17 @@ class CrashEffect
   
   color c;
   
-  CrashEffect(PVector pos, float startSize, color c)
+  CrashEffect(PVector pos, float startSize, color c, boolean isSuper)
   {
-    this.pos.set(pos);
+    this.pos = pos.copy();
     this.startSize = startSize;
     currentSize = startSize;
     endSize = startSize * GROW_PERCENTAGE;
+    
+    if (isSuper)
+    {
+      endSize *= 3;
+    }
     
     this.c = c;
   }
