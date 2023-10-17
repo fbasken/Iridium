@@ -48,8 +48,8 @@ String[] musicFilenames = new String[]
   "Andrew Hulshult - Davoth, the Dark Lord (DOOM Eternal OST Gamerip).mp3",
   "Arsonist - Discovery.mp3",
   "Kobaryo - Atmospherize [feat. blaxervant].mp3",
-  "Fractal Dreamers - Paradigm Shift.mp3",
-  "penoreri - Reverenced Flower.mp3"
+  //"Fractal Dreamers - Paradigm Shift.mp3",
+  //"penoreri - Reverenced Flower.mp3"
 };
 
 PFont subtitleFont;
